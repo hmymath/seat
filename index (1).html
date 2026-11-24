@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>자리배치</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1c2333;--sub:#687083;--line:#e3e6eb;--pri:#2f6fed;--priw:#e9f0ff;--ok:#169c4a;--warn:#c76b00;--r1:#2f6fed;--r2:#7b5cf0;--r3:#0f9d9a}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;background:var(--bg);color:var(--ink);-webkit-tap-highlight-color:transparent;font-size:15px;line-height:1.5}
+.wrap{max-width:640px;margin:0 auto;padding:16px 14px 40px}
+.wrap.wide{max-width:1080px}
+h1{font-size:21px;margin:6px 0 4px;letter-spacing:-.02em}
+h2{font-size:17px;margin:0 0 10px;letter-spacing:-.01em}
+.sub{color:var(--sub);font-size:13.5px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sp{flex:1}
+.btn{appearance:none;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:9px 14px;font:inherit;font-weight:650;cursor:pointer}
+.btn:hover{border-color:#c7ccd5}
+.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+.btn.danger{color:#b4410c;border-color:#f6cfb4}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--sub);padding-left:4px;padding-right:4px}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.block{width:100%;padding:14px;font-size:16px}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12.5px;font-weight:700;background:#eef0f3;color:var(--sub)}
+.pill.on{background:#e3f6ea;color:var(--ok)}
+.pill.off{background:#fdecec;color:#c0392b}
+input[type=text],input[type=password],select,textarea{font:inherit;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:#fff;color:var(--ink);width:100%}
+textarea{min-height:90px;resize:vertical}
+label.f{display:block;font-size:13px;font-weight:650;color:var(--sub);margin:10px 0 4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.numgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:8px}
+.num{aspect-ratio:1;border-radius:12px;border:1px solid var(--line);background:#fff;font:inherit;font-size:18px;font-weight:750;cursor:pointer;position:relative;color:var(--ink)}
+.num.sel{background:var(--pri);color:#fff;border-color:var(--pri)}
+.num.done{background:#effaf3;border-color:#bfe6cc}
+.num.done::after{content:"";position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.num.static{cursor:default;font-size:15px}
+.steps{display:flex;gap:6px;margin:10px 0 2px}
+.steps i{flex:1;height:4px;border-radius:4px;background:#dfe3ea}
+.steps i.on{background:var(--pri)}
+.me{display:inline-flex;align-items:center;gap:6px;background:var(--priw);color:var(--pri);font-weight:700;border-radius:99px;padding:4px 12px;font-size:14px}
+.board{background:#2d3a31;color:#e3ece6;text-align:center;border-radius:7px;padding:7px;font-size:12.5px;font-weight:700;letter-spacing:.15em;margin:0 auto 16px;width:62%}
+.board.bottom{margin:16px auto 0}
+.room{display:grid;gap:14px 12px}
+.desk{border:1.5px solid #cdd4de;border-radius:10px;background:#fff;display:flex;padding:4px;gap:4px;min-height:50px;position:relative;transition:border-color .12s,background .12s}
+.desk.ghost{visibility:hidden}
+.desk .lbl{position:absolute;top:-9px;left:7px;background:var(--card);font-size:10.5px;font-weight:700;color:var(--sub);padding:0 4px;border-radius:4px;line-height:16px}
+.seat{flex:1;border-radius:7px;background:#f1f4f8;display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:750;font-size:15px;min-width:0;line-height:1.1;padding:3px 1px;min-height:40px}
+.seat.off{background:repeating-linear-gradient(45deg,#fafbfc,#fafbfc 4px,#e5e9ef 4px,#e5e9ef 6px)}
+.seat .nm{font-size:10.5px;font-weight:500;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-top:2px}
+.seat.empty{color:#b8bfca;font-weight:500;font-size:12px}
+.pick .desk.can{cursor:pointer}
+.pick .desk.can:hover{border-color:var(--pri)}
+.pick .desk.no{opacity:.35}
+.desk.k1{border-color:var(--r1);background:#eef3ff}.desk.k2{border-color:var(--r2);background:#f3efff}.desk.k3{border-color:var(--r3);background:#e9f8f7}
+.rank{position:absolute;top:-11px;right:-9px;min-width:24px;height:24px;border-radius:99px;color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 6px;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.rank.k1{background:var(--r1)}.rank.k2{background:var(--r2)}.rank.k3{background:var(--r3)}
+.edit .seat{cursor:pointer}
+.edit .seat:hover{outline:2px solid var(--pri)}
+.res .seat{cursor:pointer}
+.res .seat.mate{background:#e6efff}
+.res .seat.sw{outline:3px solid #f59e0b;outline-offset:-1px}
+.tag{position:absolute;bottom:-9px;right:6px;font-size:10px;font-weight:800;padding:0 5px;border-radius:5px;background:#fff;border:1px solid var(--line);color:var(--sub);line-height:15px}
+.tag.k1{color:var(--r1);border-color:#c7d6fb}.tag.k2{color:var(--r2);border-color:#d8cdfb}.tag.k3{color:var(--r3);border-color:#bde8e6}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0 4px;overflow-x:auto}
+.tab{appearance:none;border:0;background:none;font:inherit;font-weight:700;color:var(--sub);padding:10px 14px;border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap}
+.tab.on{color:var(--pri);border-bottom-color:var(--pri)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:center}
+th{color:var(--sub);font-weight:650;font-size:12.5px;background:#fafbfc}
+.note{background:#fff8eb;border:1px solid #f6e1b5;color:#7a4b00;border-radius:10px;padding:10px 12px;font-size:13.5px;margin:10px 0}
+.info{background:var(--priw);border:1px solid #d3e0fd;color:#23468f;border-radius:10px;padding:10px 12px;font-size:13.5px;margin:10px 0}
+.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:8px 0}
+.stat div{background:#f7f8fa;border-radius:10px;padding:10px}
+.stat b{display:block;font-size:20px}
+.stat span{font-size:12px;color:var(--sub)}
+.qrbox{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+#qr{background:#fff;padding:10px;border:1px solid var(--line);border-radius:12px;width:min-content}
+#qr img,#qr canvas{display:block}
+.url{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;word-break:break-all;background:#f4f5f7;border-radius:8px;padding:8px 10px}
+#demo{position:sticky;top:0;z-index:20;background:#1c2333;color:#fff;padding:8px 14px;font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#demo .btn{padding:5px 10px;font-size:12.5px;background:#2c3548;color:#fff;border-color:#3b4660}
+#demo .btn.on{background:var(--pri);border-color:var(--pri)}
+.ovl{position:fixed;inset:0;background:rgba(15,20,30,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.dlg{background:#fff;border-radius:16px;padding:20px;max-width:380px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.dlg p{margin:0 0 16px;white-space:pre-line}
+.bigqr{background:#fff;border-radius:18px;padding:28px;text-align:center}
+.bigqr h2{font-size:26px;margin-bottom:16px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1c2333;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+#toast.show{opacity:1}
+.center{text-align:center}
+.big{font-size:44px;margin:6px 0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--sub);margin-top:14px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+.ed{display:grid;gap:6px 12px;align-items:center}
+.ed .hd{display:flex;align-items:center;justify-content:center;gap:3px}
+.ed .hd.v{flex-direction:column}
+.hl{appearance:none;border:0;background:none;font:inherit;font-size:12.5px;font-weight:750;color:var(--sub);cursor:pointer;padding:2px 4px;border-radius:6px;white-space:nowrap}
+.hl:hover{background:var(--priw);color:var(--pri)}
+.x{appearance:none;border:0;background:#f0f2f5;color:#8a93a3;border-radius:6px;width:22px;height:22px;font-size:15px;line-height:1;cursor:pointer;padding:0}
+.x:hover{background:#fde4e4;color:#c0392b}
+.plus{appearance:none;border:1px dashed #b9c2d0;background:#fff;color:var(--pri);border-radius:8px;width:28px;height:28px;font-size:17px;font-weight:700;cursor:pointer;padding:0;line-height:1}
+.plus:hover{border-color:var(--pri);background:var(--priw)}
+.plus.sm{width:24px;height:20px;font-size:14px}
+.ins{display:flex;justify-content:center}
+.ins.v{align-self:stretch;align-items:center}
+.gapline{height:0}
+.ed .desk{margin-top:8px}
+.addrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.btn.chip{padding:6px 10px;font-size:13px}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper span{font-size:13px;font-weight:650;color:var(--sub)}
+.stepper .btn{width:36px;height:36px;padding:0;font-size:18px}
+.stepper b{min-width:22px;text-align:center;font-size:18px}
+.printonly{display:none}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}.seat{font-size:14px}}
+@media print{
+  body{background:#fff}
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{position:absolute;left:0;top:0;width:100%}
+  .printonly{display:block}
+  .res .seat.sw{outline:none}
+  .tag{display:none}
+}
+</style>
+</head>
+<body>
+<div id="demo" hidden></div>
+<div id="app"></div>
+<div id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ======================================================================
+   ★ 여기만 바꾸면 돼요 ★
+   파이어베이스 콘솔 → 프로젝트 설정 → 내 앱(웹)에서 보이는 firebaseConfig 값을
+   아래 { } 안에 그대로 붙여 넣으세요.
+   ====================================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "여기에_붙여넣기",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+</script>
+<script>
+// ==ALGO START==
+/* ---------- 공통 로직 (배치 알고리즘) ---------- */
+function parseNums(range, exclude){
+  const set = new Set();
+  String(range || '').split(',').forEach(part => {
+    part = part.trim();
+    const m = part.match(/^(\d+)\s*[-~]\s*(\d+)$/);
+    if (m) { let a = +m[1], b = +m[2]; if (a > b) [a, b] = [b, a]; for (let i = a; i <= b && i - a < 300; i++) set.add(i); }
+    else if (/^\d+$/.test(part)) set.add(+part);
+  });
+  const ex = new Set();
+  String(exclude || '').split(/[,\s]+/).forEach(p => { if (/^\d+$/.test(p)) ex.add(+p); });
+  return [...set].filter(n => !ex.has(n)).sort((a, b) => a - b);
+}
+
+// 책상 목록 만들기. 2인 책상(짝 자리) 기준, 사용하는 좌석이 있는 책상에만 번호(label)를 붙임
+function buildDesks(layout){
+  const dis = new Set(layout.disabled || []);
+  const desks = []; let n = 0;
+  for (let r = 0; r < layout.rows; r++) for (let c = 0; c < layout.pairCols; c++) {
+    const all = [0, 1].map(s => r + '-' + c + '-' + s);
+    const seats = all.filter(id => !dis.has(id));
+    desks.push({ key: r + '-' + c, r, c, all, seats, label: seats.length ? ++n : null });
+  }
+  return desks;
+}
+
+function shuffle(arr, rng){
+  rng = rng || Math.random; const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+
+/*
+  배치 규칙
+  1) 서로가 서로를 짝으로 지목한 경우에만 짝 성립
+  2) 짝의 자리 희망: 두 사람의 1·2·3순위를 합산(1순위 3점, 2순위 2점, 3순위 1점)해 짝의 1~3순위를 만듦
+  3) 추첨 순서를 무작위로 정한 뒤, 1순위끼리 먼저 배정 → 남은 짝은 2순위 → 3순위
+  4) 희망 자리가 모두 찼거나 희망이 없는 짝은 남은 2인 책상에 랜덤
+  5) 짝이 성립하지 않은 학생, 미제출 학생은 남은 자리에 랜덤
+*/
+function assignSeats(layout, students, responses, rng){
+  rng = rng || Math.random;
+  const desks = buildDesks(layout);
+  const byLabel = {}; desks.forEach(d => { if (d.label) byLabel[d.label] = d; });
+  const pairDesks = desks.filter(d => d.seats.length === 2);
+  const pairLabels = new Set(pairDesks.map(d => d.label));
+  const stu = new Set(students);
+  const resp = {};
+  (responses || []).forEach(x => { if (stu.has(x.num)) resp[x.num] = x; });
+  const warnings = [];
+
+  let pairs = [];
+  students.forEach(a => {
+    const b = resp[a] && resp[a].partner;
+    if (b && b !== a && stu.has(b) && resp[b] && resp[b].partner === a && a < b) pairs.push({ members: [a, b] });
+  });
+  pairs = shuffle(pairs, rng);
+  if (pairs.length > pairDesks.length) {
+    const cut = pairs.splice(pairDesks.length);
+    warnings.push('2인 책상이 ' + pairDesks.length + '개뿐이라 서로 지목한 짝 중 ' + cut.length + '쌍(' + cut.map(p => p.members.join('·')).join(', ') + ')은 짝으로 앉히지 못했어요.');
+  }
+  const inPair = new Set(); pairs.forEach(p => p.members.forEach(m => inPair.add(m)));
+
+  pairs.forEach(p => {
+    const score = {}, best = {}, tie = {};
+    p.members.forEach(m => (resp[m].prefs || []).slice(0, 3).forEach((d, i) => {
+      if (!pairLabels.has(d)) return;
+      score[d] = (score[d] || 0) + (3 - i);
+      best[d] = Math.min(best[d] == null ? 9 : best[d], i);
+    }));
+    Object.keys(score).forEach(d => tie[d] = rng());
+    p.prefs = Object.keys(score).sort((x, y) => score[y] - score[x] || best[x] - best[y] || tie[x] - tie[y]).slice(0, 3).map(Number);
+  });
+
+  const seatOf = {}; const taken = new Set();
+  const put = (desk, nums) => { const o = shuffle(nums, rng); desk.seats.forEach((s, i) => { if (o[i] != null) seatOf[s] = o[i]; }); taken.add(desk.key); };
+
+  for (let k = 0; k < 3; k++) pairs.forEach(p => {
+    if (p.desk) return; const d = byLabel[p.prefs[k]];
+    if (d && !taken.has(d.key)) { p.desk = d.label; p.got = k + 1; put(d, p.members); }
+  });
+  const freePair = shuffle(pairDesks.filter(d => !taken.has(d.key)), rng);
+  pairs.forEach(p => { if (p.desk) return; const d = freePair.shift(); p.desk = d.label; p.got = 0; put(d, p.members); });
+
+  const singles = shuffle(students.filter(s => !inPair.has(s)), rng);
+  const two = shuffle(pairDesks.filter(d => !taken.has(d.key)), rng);
+  const one = shuffle(desks.filter(d => d.seats.length === 1 && !taken.has(d.key)), rng);
+  let order = two.concat(one);
+  if (singles.length % 2 === 1 && one.length) order = [one[0]].concat(two, one.slice(1)); // 홀수면 1인석부터 채워 짝 없이 혼자 앉는 2인 책상을 줄임
+  const free = []; order.forEach(d => shuffle(d.seats, rng).forEach(s => free.push(s)));
+  const unplaced = [];
+  singles.forEach((s, i) => { if (free[i]) seatOf[free[i]] = s; else unplaced.push(s); });
+  if (unplaced.length) warnings.push('좌석이 부족해 ' + unplaced.join(', ') + '번은 배치하지 못했어요. 좌석 설정을 확인해 주세요.');
+
+  const oneSided = [];
+  students.forEach(a => { const b = resp[a] && resp[a].partner; if (b && !inPair.has(a)) oneSided.push({ from: a, to: b }); });
+  const unsubmitted = students.filter(s => !resp[s]);
+
+  return {
+    layout: { rows: layout.rows, pairCols: layout.pairCols, disabled: (layout.disabled || []).slice() },
+    seatOf, pairs: pairs.map(p => ({ members: p.members, got: p.got, desk: p.desk })),
+    oneSided, unsubmitted, warnings, unplaced
+  };
+}
+// ==ALGO END==
+
+/* ---------- 환경 (파이어베이스 / 체험 모드) ---------- */
+const FB = !!(typeof firebase !== 'undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.projectId && !/여기/.test(FIREBASE_CONFIG.apiKey));
+const REAL = FB;
+const APP_URL = FB ? location.origin + location.pathname : location.href.split('#')[0];
+let MODE = FB ? (new URLSearchParams(location.search).has('admin') ? 'admin' : 'student') : 'student';
+let fdb = null, fauth = null;
+if (FB) { firebase.initializeApp(FIREBASE_CONFIG); fdb = firebase.firestore(); fauth = firebase.auth(); }
+
+function defaultConfig(){
+  return { title: '우리 반 자리배치', rows: 4, pairCols: 4, disabled: [], studentRange: '1-35', studentExclude: '4, 11, 34',
+    students: parseNums('1-35', '4, 11, 34'), names: {}, open: true };
+}
+function sanitizeConfig(c){
+  const d = defaultConfig(); c = c || {};
+  const rows = Math.max(1, Math.min(10, parseInt(c.rows) || d.rows));
+  const pairCols = Math.max(1, Math.min(8, parseInt(c.pairCols) || d.pairCols));
+  const valid = new Set(); for (let r = 0; r < rows; r++) for (let k = 0; k < pairCols; k++) for (let s = 0; s < 2; s++) valid.add(r + '-' + k + '-' + s);
+  const names = {}; Object.keys(c.names || {}).forEach(k => { const v = String(c.names[k]).trim().slice(0, 20); if (/^\d+$/.test(k) && v) names[k] = v; });
+  return { title: String(c.title || d.title).slice(0, 60), rows, pairCols,
+    disabled: (c.disabled || []).filter(x => valid.has(x)),
+    studentRange: String(c.studentRange == null ? d.studentRange : c.studentRange).slice(0, 200),
+    studentExclude: String(c.studentExclude == null ? d.studentExclude : c.studentExclude).slice(0, 200),
+    students: parseNums(c.studentRange == null ? d.studentRange : c.studentRange, c.studentExclude == null ? d.studentExclude : c.studentExclude),
+    names, open: c.open !== false };
+}
+function sanitizeSubmission(cfg, data){
+  if (!cfg.open) throw new Error('지금은 제출 기간이 아니에요.');
+  const num = Number(data.num);
+  if (cfg.students.indexOf(num) < 0) throw new Error('번호가 올바르지 않아요.');
+  let partner = (data.partner == null || data.partner === '') ? null : Number(data.partner);
+  if (partner !== null && (partner === num || cfg.students.indexOf(partner) < 0)) partner = null;
+  const valid = buildDesks(cfg).filter(d => d.seats.length === 2).map(d => d.label);
+  const prefs = [];
+  if (partner !== null) (data.prefs || []).forEach(p => { p = Number(p); if (valid.indexOf(p) >= 0 && prefs.indexOf(p) < 0 && prefs.length < 3) prefs.push(p); });
+  return { num, partner, prefs };
+}
+
+const Store = {
+  mem: {},
+  get(k){ try { const v = localStorage.getItem('seatdemo_' + k); if (v != null) return JSON.parse(v); } catch (e) {} return this.mem[k] == null ? null : this.mem[k]; },
+  set(k, v){ this.mem[k] = v; try { localStorage.setItem('seatdemo_' + k, JSON.stringify(v)); } catch (e) {} }
+};
+const nowStr = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()); };
+const Mock = {
+  cfg(){ return sanitizeConfig(Store.get('config') || defaultConfig()); },
+  resp(){ return Store.get('responses') || []; },
+  getPublicState(){ const c = Mock.cfg(); delete c.names; c.submitted = Mock.resp().map(r => r.num); return c; },
+  submitResponse(d){ const s = sanitizeSubmission(Mock.cfg(), d); s.time = nowStr(); const r = Mock.resp().filter(x => x.num !== s.num); r.push(s); r.sort((a, b) => a.num - b.num); Store.set('responses', r); return { ok: true }; },
+  adminGetAll(){ return { config: Mock.cfg(), responses: Mock.resp(), result: Store.get('result') }; },
+  adminSaveConfig(pin, c){ const old = Mock.cfg(); c = sanitizeConfig(c); c.open = old.open; Store.set('config', c); return Mock.adminGetAll(); },
+  adminSetOpen(pin, o){ const c = Mock.cfg(); c.open = !!o; Store.set('config', c); return Mock.adminGetAll(); },
+  adminClearResponses(){ Store.set('responses', []); return Mock.adminGetAll(); },
+  adminSaveResult(pin, r){ Store.set('result', r); return Mock.adminGetAll(); }
+};
+const fmtTs = ts => { if (!ts || !ts.toDate) return ''; const d = ts.toDate(), p = n => String(n).padStart(2, '0'); return p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()); };
+const Fire = {
+  async cfgRaw(){ const s = await fdb.doc('seat/config').get(); return s.exists ? s.data() : null; },
+  async getPublicState(){
+    const c = await Fire.cfgRaw();
+    if (!c) throw new Error('선생님이 아직 좌석 설정을 저장하지 않았어요.');
+    const x = sanitizeConfig(c); delete x.names; x.submitted = []; x.noStatus = true; return x;
+  },
+  async submitResponse(d){
+    const c = await Fire.cfgRaw(); if (!c) throw new Error('선생님이 아직 좌석 설정을 저장하지 않았어요.');
+    const s = sanitizeSubmission(sanitizeConfig(c), d);
+    await fdb.collection('responses').doc(String(s.num)).set({ num: s.num, partner: s.partner, prefs: s.prefs, time: firebase.firestore.FieldValue.serverTimestamp() });
+    return { ok: true };
+  },
+  async adminGetAll(){
+    const [c, p, rs, res] = await Promise.all([fdb.doc('seat/config').get(), fdb.doc('seat/private').get(), fdb.collection('responses').get(), fdb.doc('seat/result').get()]);
+    const raw = c.exists ? Object.assign({}, c.data()) : defaultConfig();
+    raw.names = p.exists ? (p.data().names || {}) : {};
+    const responses = rs.docs.map(x => { const v = x.data(); return { num: v.num, partner: v.partner == null ? null : v.partner, prefs: v.prefs || [], time: fmtTs(v.time) }; }).sort((a, b) => a.num - b.num);
+    let result = null; if (res.exists) { try { result = JSON.parse(res.data().json); } catch (e) {} }
+    return { config: sanitizeConfig(raw), responses, result, configSaved: c.exists };
+  },
+  async adminSaveConfig(pin, c){
+    const old = await Fire.cfgRaw(); c = sanitizeConfig(c);
+    const names = c.names; delete c.names; c.open = old ? old.open !== false : true;
+    await fdb.doc('seat/config').set(c); await fdb.doc('seat/private').set({ names });
+    return Fire.adminGetAll();
+  },
+  async adminSetOpen(pin, o){
+    if (!(await Fire.cfgRaw())) throw new Error('먼저 ① 탭에서 설정을 저장해 주세요.');
+    await fdb.doc('seat/config').update({ open: !!o }); return Fire.adminGetAll();
+  },
+  async adminClearResponses(){
+    const rs = await fdb.collection('responses').get(); const b = fdb.batch(); rs.docs.forEach(d => b.delete(d.ref)); await b.commit();
+    return Fire.adminGetAll();
+  },
+  async adminSaveResult(pin, r){ await fdb.doc('seat/result').set({ json: JSON.stringify(r) }); return Fire.adminGetAll(); }
+};
+function api(fn, ...args){
+  if (FB) return Fire[fn](...args).catch(e => {
+    if (e && e.code === 'permission-denied') throw new Error(MODE === 'admin' ? '이 구글 계정은 교사 계정으로 등록돼 있지 않아요. (보안 규칙의 이메일을 확인해 주세요)' : '지금은 제출할 수 없어요. 제출이 마감됐는지 선생님께 확인해 주세요.');
+    if (e && e.code === 'unavailable') throw new Error('인터넷 연결을 확인해 주세요.');
+    throw e;
+  });
+  return new Promise((res, rej) => setTimeout(() => { try { res(JSON.parse(JSON.stringify(Mock[fn](...args)))); } catch (e) { rej(e); } }, 120));
+}
+
+/* ---------- UI 도우미 ---------- */
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2200); }
+function errMsg(e){ return (e && e.message) ? e.message : String(e); }
+function confirmBox(msg, okText){
+  return new Promise(res => {
+    const o = document.createElement('div'); o.className = 'ovl';
+    o.innerHTML = '<div class="dlg"><p></p><div class="row"><span class="sp"></span><button class="btn" data-v="0">취소</button><button class="btn pri" data-v="1"></button></div></div>';
+    o.querySelector('p').textContent = msg; o.querySelector('[data-v="1"]').textContent = okText || '확인';
+    o.addEventListener('click', e => { const v = e.target.getAttribute('data-v'); if (v != null || e.target === o) { o.remove(); res(v === '1'); } });
+    document.body.appendChild(o);
+  });
+}
+
+// 교실 그림
+function roomHTML(layout, o){
+  o = o || {};
+  const desks = buildDesks(layout); const map = {}; desks.forEach(d => map[d.key] = d);
+  let rows = [...Array(layout.rows).keys()], cols = [...Array(layout.pairCols).keys()];
+  if (o.teacher) { rows.reverse(); cols.reverse(); }
+  let h = o.teacher ? '' : '<div class="board">칠 판</div>';
+  h += '<div class="room" style="grid-template-columns:repeat(' + layout.pairCols + ',minmax(0,1fr))">';
+  rows.forEach(r => cols.forEach(c => {
+    const d = map[r + '-' + c];
+    if (!o.showAll && !d.seats.length) { h += '<div class="desk ghost"></div>'; return; }
+    const extra = o.desk ? o.desk(d) : { cls: '', inner: '' };
+    h += '<div class="desk ' + (extra.cls || '') + '" data-desk="' + d.key + '">';
+    if (o.labels && d.label) h += '<span class="lbl">' + d.label + '번</span>';
+    const idx = o.teacher ? [1, 0] : [0, 1];
+    idx.forEach(s => {
+      const sid = d.all[s]; const on = d.seats.indexOf(sid) >= 0;
+      const sc = o.seat ? o.seat(sid, on, d) : { cls: '', html: '' };
+      h += '<div class="seat ' + (on ? '' : 'off ') + (sc.cls || '') + '" data-seat="' + sid + '">' + (sc.html || '') + '</div>';
+    });
+    h += (extra.inner || '') + '</div>';
+  }));
+  h += '</div>';
+  if (o.teacher) h += '<div class="board bottom">칠 판 (교사 시점)</div>';
+  return h;
+}
+function makeQR(el, text, size){
+  el.innerHTML = '';
+  try { if (typeof QRCode !== 'undefined') { new QRCode(el, { text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M }); return; } } catch (e) {}
+  const img = new Image(size, size); img.alt = 'QR 코드';
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&data=' + encodeURIComponent(text);
+  img.onerror = () => { el.innerHTML = '<div class="sub" style="width:' + size + 'px">QR을 불러오지 못했어요. 아래 주소로 QR을 만들어 주세요.</div>'; };
+  el.appendChild(img);
+}
+
+/* ================= 학생 화면 ================= */
+const S = { pub: null, step: 1, num: null, partner: null, prefs: [], busy: false };
+
+async function studentInit(){
+  S.step = 1; S.num = null; S.partner = null; S.prefs = [];
+  app.innerHTML = '<div class="wrap"><p class="sub">불러오는 중…</p></div>';
+  try { S.pub = await api('getPublicState'); studentRender(); }
+  catch (e) { app.innerHTML = '<div class="wrap"><div class="card">불러오지 못했어요: ' + esc(errMsg(e)) + '</div></div>'; }
+}
+function studentRender(){
+  const p = S.pub;
+  let h = '<div class="wrap"><h1>' + esc(p.title) + '</h1>';
+  if (!p.open) { app.innerHTML = h + '<div class="card center"><div class="big">🔒</div><b>지금은 제출 기간이 아니에요.</b><p class="sub">선생님이 제출을 열면 다시 접속해 주세요.</p></div></div>'; return; }
+  h += '<div class="steps">' + [1, 2, 3, 4].map(i => '<i class="' + (i <= S.step ? 'on' : '') + '"></i>').join('') + '</div>';
+
+  if (S.step === 1) {
+    h += '<div class="card"><h2>1. 내 번호를 눌러 주세요</h2><div class="numgrid">' +
+      p.students.map(n => '<button class="num' + (p.submitted.indexOf(n) >= 0 ? ' done' : '') + '" data-num="' + n + '">' + n + '</button>').join('') +
+      '</div><p class="sub" style="margin-top:12px">' + (p.noStatus ? '자기 번호를 정확히 골라 주세요. 다시 제출하면 마지막 제출만 반영돼요.' : '초록 점이 있는 번호는 이미 제출한 번호예요. 다시 제출하면 마지막 제출만 반영돼요.') + '</p></div>';
+  }
+  if (S.step === 2) {
+    h += '<div class="row"><span class="me">내 번호 ' + S.num + '번</span><button class="btn ghost" data-act="to1">번호 바꾸기</button></div>';
+    if (p.submitted.indexOf(S.num) >= 0) h += '<div class="note">이 번호로 이미 제출했어요. 다시 제출하면 이전 내용은 지워져요.</div>';
+    h += '<div class="card"><h2>2. 짝꿍으로 앉고 싶은 친구의 번호는?</h2>' +
+      '<p class="sub" style="margin-top:-4px">친구도 나를 골라야 짝이 돼요. 한 명만 고를 수 있어요.</p><div class="numgrid">' +
+      p.students.filter(n => n !== S.num).map(n => '<button class="num' + (S.partner === n ? ' sel' : '') + '" data-partner="' + n + '">' + n + '</button>').join('') +
+      '</div><div style="margin-top:14px"><button class="btn block" data-act="nopartner">희망하는 짝 없음 (랜덤 배치)</button></div></div>';
+  }
+  if (S.step === 3) {
+    h += '<div class="row"><span class="me">내 번호 ' + S.num + '번</span><span class="me">희망 짝 ' + S.partner + '번</span><button class="btn ghost" data-act="to2">짝 바꾸기</button></div>';
+    h += '<div class="card"><h2>3. 짝과 함께 앉고 싶은 자리</h2><p class="sub" style="margin-top:-4px">원하는 책상을 1순위 → 2순위 → 3순위 순서로 눌러 주세요. 다시 누르면 취소돼요.</p>' +
+      '<div class="pick" style="margin-top:14px">' + roomHTML(p, {
+        labels: true,
+        desk: d => { const k = S.prefs.indexOf(d.label) + 1; return { cls: (d.seats.length === 2 ? 'can' : 'no') + (k ? ' k' + k : ''), inner: k ? '<span class="rank k' + k + '">' + k + '</span>' : '' }; },
+        seat: () => ({ html: '' })
+      }) + '</div>' +
+      '<div style="margin-top:18px"><button class="btn block pri" data-act="to4">' + (S.prefs.length ? '다음 (' + S.prefs.length + '개 선택)' : '자리는 상관없음 (랜덤)') + '</button></div></div>';
+  }
+  if (S.step === 4) {
+    const pref = S.partner === null ? '짝 희망이 없어 랜덤 배치' : (S.prefs.length ? S.prefs.map((d, i) => (i + 1) + '순위 ' + d + '번 책상').join(' · ') : '상관없음 (랜덤)');
+    h += '<div class="card"><h2>4. 제출 내용 확인</h2><table>' +
+      '<tr><th style="width:35%">내 번호</th><td><b>' + S.num + '번</b></td></tr>' +
+      '<tr><th>희망 짝</th><td>' + (S.partner === null ? '없음' : '<b>' + S.partner + '번</b>') + '</td></tr>' +
+      '<tr><th>희망 자리</th><td>' + pref + '</td></tr></table>' +
+      '<div class="info">서로 상대를 고른 경우에만 짝이 돼요. 짝이 안 되면 자리는 랜덤으로 정해져요.</div>' +
+      '<div class="row"><button class="btn" data-act="back">이전</button><span class="sp"></span><button class="btn pri" data-act="submit"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '제출 중…' : '제출하기') + '</button></div></div>';
+  }
+  if (S.step === 5) {
+    h = '<div class="wrap"><h1>' + esc(p.title) + '</h1><div class="card center"><div class="big">✅</div><h2>제출 완료!</h2><p class="sub">' + S.num + '번 학생의 희망이 저장됐어요.<br>바꾸고 싶으면 다시 제출하면 돼요.</p><button class="btn" data-act="restart">처음으로</button></div>';
+  }
+  app.innerHTML = h + '</div>';
+}
+app.addEventListener('click', async e => {
+  if (MODE !== 'student') return;
+  const t = e.target.closest('[data-num],[data-partner],[data-act],.desk.can'); if (!t) return;
+  if (t.dataset.num) { S.num = +t.dataset.num; if (S.partner === S.num) S.partner = null; S.step = 2; }
+  else if (t.dataset.partner) { const n = +t.dataset.partner; if (S.partner !== n) S.prefs = []; S.partner = n; S.step = 3; }
+  else if (t.classList.contains('desk')) {
+    const d = buildDesks(S.pub).find(x => x.key === t.dataset.desk); const i = S.prefs.indexOf(d.label);
+    if (i >= 0) S.prefs.splice(i, 1); else if (S.prefs.length < 3) S.prefs.push(d.label); else toast('3순위까지만 고를 수 있어요. 먼저 하나를 취소해 주세요.');
+  }
+  else {
+    const a = t.dataset.act;
+    if (a === 'to1') S.step = 1;
+    if (a === 'to2') S.step = 2;
+    if (a === 'nopartner') { S.partner = null; S.prefs = []; S.step = 4; }
+    if (a === 'to4') S.step = 4;
+    if (a === 'back') S.step = S.partner === null ? 2 : 3;
+    if (a === 'restart') return studentInit();
+    if (a === 'submit') {
+      S.busy = true; studentRender();
+      try { await api('submitResponse', { num: S.num, partner: S.partner, prefs: S.prefs }); S.busy = false; S.step = 5; }
+      catch (err) { S.busy = false; toast('제출 실패: ' + errMsg(err)); }
+    }
+  }
+  studentRender(); window.scrollTo(0, 0);
+});
+
+/* ================= 교사 화면 ================= */
+const A = { pin: '', cfg: null, draft: null, responses: [], result: null, saved: true, tab: 'setup', teacher: false, sw: null, timer: null };
+
+function adminLoginView(msg){
+  const u = fauth && fauth.currentUser;
+  app.innerHTML = '<div class="wrap" style="max-width:400px"><h1>교사용 화면</h1><div class="card"><p class="sub" style="margin-top:0">파이어베이스 보안 규칙에 등록한 선생님 구글 계정으로 로그인해 주세요.</p>' +
+    '<button class="btn pri block" id="loginBtn">구글 계정으로 로그인</button>' +
+    (u ? '<p class="sub">현재 로그인: ' + esc(u.email) + ' <button class="btn ghost" id="logoutBtn">로그아웃</button></p>' : '') +
+    (msg ? '<p class="sub" style="color:#c0392b">' + esc(msg) + '</p>' : '') + '</div></div>';
+  $('#loginBtn').onclick = async () => {
+    const prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({ prompt: 'select_account' });
+    try { await fauth.signInWithPopup(prov); adminInit(); }
+    catch (e) { if (e && /popup/.test(e.code || '')) fauth.signInWithRedirect(prov); else adminLoginView(e && e.code === 'auth/unauthorized-domain' ? '이 주소가 파이어베이스 승인된 도메인에 없어요. (가이드 4단계 확인)' : errMsg(e)); }
+  };
+  const lo = $('#logoutBtn'); if (lo) lo.onclick = async () => { await fauth.signOut(); adminLoginView(); };
+}
+function adminLoad(all){
+  A.configSaved = all.configSaved !== false; A.cfg = all.config; A.responses = all.responses || []; if (A.saved || !A.result) { A.result = all.result || null; A.saved = true; }
+  A.draft = JSON.parse(JSON.stringify(A.cfg)); adminRender();
+}
+async function adminInit(){
+  app.innerHTML = '<div class="wrap wide"><p class="sub">불러오는 중…</p></div>';
+  if (FB) {
+    const user = await new Promise(res => { const off = fauth.onAuthStateChanged(u => { off(); res(u); }); });
+    if (!user) return adminLoginView();
+  }
+  try { adminLoad(await api('adminGetAll', A.pin)); } catch (e) { adminLoginView(errMsg(e)); }
+}
+const TABS = [['setup', '① 좌석·학생 설정'], ['access', '② 학생 접속·제출 현황'], ['resp', '③ 응답 확인'], ['result', '④ 자리 배치']];
+function adminRender(){
+  clearInterval(A.timer);
+  let h = '<div class="wrap wide"><div class="row"><h1>' + esc(A.cfg.title) + ' · 교사용</h1><span class="sp"></span><span class="pill ' + (A.cfg.open ? 'on' : 'off') + '">' + (A.cfg.open ? '제출 받는 중' : '제출 마감') + '</span><span class="pill">제출 ' + A.responses.length + '/' + A.cfg.students.length + '</span>' + (FB && fauth.currentUser ? '<button class="btn ghost" id="logout" title="' + esc(fauth.currentUser.email) + '">로그아웃</button>' : '') + '</div>';
+  if (!A.configSaved) h += '<div class="note">아직 좌석 설정을 한 번도 저장하지 않았어요. ① 탭에서 <b>설정 저장</b>을 눌러야 학생들이 제출할 수 있어요.</div>';
+  h += '<div class="tabs">' + TABS.map(t => '<button class="tab' + (A.tab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+  h += '<div id="pane"></div></div>';
+  app.innerHTML = h;
+  const lo = $('#logout'); if (lo) lo.onclick = async () => { await fauth.signOut(); A.result = null; A.saved = true; adminLoginView(); };
+  ({ setup: paneSetup, access: paneAccess, resp: paneResp, result: paneResult })[A.tab]();
+}
+app.addEventListener('click', e => {
+  if (MODE !== 'admin') return;
+  const t = e.target.closest('[data-tab]'); if (t) { A.tab = t.dataset.tab; A.sw = null; adminRender(); }
+});
+
+// ① 설정
+function paneSetup(){
+  const d = A.draft;
+  const namesTxt = Object.keys(d.names || {}).sort((a, b) => a - b).map(k => k + ' ' + d.names[k]).join('\n');
+  $('#pane').innerHTML =
+    '<div class="card"><h2>기본 정보</h2><label class="f">제목 (학생 화면에 표시)</label><input type="text" id="fTitle" value="' + esc(d.title) + '"></div>' +
+    '<div class="card"><div class="row"><h2 style="margin:0">좌석배치도</h2><span class="sp"></span><span class="sub" id="seatCount"></span></div>' +
+    '<div class="row" style="margin:10px 0 4px;gap:18px">' +
+      '<div class="stepper"><span>행 (앞→뒤)</span><button class="btn" data-step="rows" data-v="-1" aria-label="행 줄이기">−</button><b id="vRows"></b><button class="btn" data-step="rows" data-v="1" aria-label="행 늘리기">+</button></div>' +
+      '<div class="stepper"><span>열 (2인 책상)</span><button class="btn" data-step="pairCols" data-v="-1" aria-label="열 줄이기">−</button><b id="vCols"></b><button class="btn" data-step="pairCols" data-v="1" aria-label="열 늘리기">+</button></div>' +
+    '</div>' +
+    '<p class="sub">· 좌석을 누르면 빗금(사용 안 함) ↔ 사용으로 바뀌어요. 한쪽만 남은 책상은 1인석이 돼요.<br>· <b>1행·1열</b> 같은 머리글을 누르면 그 줄 전체를 비우거나 채우고, <b>×</b>를 누르면 그 줄을 통째로 삭제해요.<br>· 아래 <b>+</b> 버튼으로 원하는 위치에 행·열을 끼워 넣을 수 있어요.</p>' +
+    '<div class="edit" id="editMap" style="max-width:780px;margin:18px auto 4px"></div></div>' +
+    '<div class="card"><h2>학생 번호</h2><div class="grid2"><div><label class="f">번호 범위 (예: 1-35)</label><input type="text" id="fRange" value="' + esc(d.studentRange) + '"></div>' +
+    '<div><label class="f">없는 번호 (쉼표로 구분)</label><input type="text" id="fEx" value="' + esc(d.studentExclude) + '"></div></div>' +
+    '<p class="sub" id="stuPreview"></p>' +
+    '<label class="f">이름 (선택, 교사 화면과 인쇄본에만 표시) — 한 줄에 “번호 이름”</label><textarea id="fNames" placeholder="1 김하늘&#10;2 이바다">' + esc(namesTxt) + '</textarea></div>' +
+    '<div class="row"><span class="sp"></span><button class="btn" id="resetDraft">되돌리기</button><button class="btn pri" id="saveCfg">설정 저장</button></div>';
+
+  // 행/열 삽입·삭제 시 '사용 안 함' 좌석 위치를 함께 옮김
+  const shiftDisabled = (axis, at, delta) => {
+    d.disabled = d.disabled.map(id => {
+      const p = id.split('-').map(Number); const i = axis === 'r' ? 0 : 1;
+      if (delta < 0 && p[i] === at) return null;
+      if (p[i] >= at + (delta < 0 ? 1 : 0)) p[i] += delta;
+      return p.join('-');
+    }).filter(Boolean);
+  };
+  const MAXR = 10, MAXC = 8;
+  const insRow = at => { if (d.rows >= MAXR) return toast('행은 최대 ' + MAXR + '개까지예요.'); shiftDisabled('r', at, 1); d.rows++; upd(); };
+  const insCol = at => { if (d.pairCols >= MAXC) return toast('열은 최대 ' + MAXC + '개까지예요.'); shiftDisabled('c', at, 1); d.pairCols++; upd(); };
+  const delRow = at => { if (d.rows <= 1) return toast('행은 최소 1개 있어야 해요.'); shiftDisabled('r', at, -1); d.rows--; upd(); };
+  const delCol = at => { if (d.pairCols <= 1) return toast('열은 최소 1개 있어야 해요.'); shiftDisabled('c', at, -1); d.pairCols--; upd(); };
+  const toggleLine = (axis, at) => {
+    const ids = []; for (let r = 0; r < d.rows; r++) for (let c = 0; c < d.pairCols; c++) if ((axis === 'r' ? r : c) === at) ids.push(r + '-' + c + '-0', r + '-' + c + '-1');
+    const allOff = ids.every(id => d.disabled.indexOf(id) >= 0);
+    d.disabled = d.disabled.filter(id => ids.indexOf(id) < 0); if (!allOff) d.disabled = d.disabled.concat(ids); upd();
+  };
+
+  const editorHTML = () => {
+    const desks = buildDesks(d); const map = {}; desks.forEach(x => map[x.key] = x);
+    const cols = '34px repeat(' + d.pairCols + ',minmax(0,1fr)) 34px';
+    let h = '<div class="board">칠 판</div><div class="ed" style="grid-template-columns:' + cols + '">';
+    h += '<div></div>';
+    for (let c = 0; c < d.pairCols; c++) h += '<div class="hd"><button class="hl" data-tcol="' + c + '" title="이 열 전체 비우기/채우기">' + (c + 1) + '열</button><button class="x" data-dcol="' + c + '" title="' + (c + 1) + '열 삭제" aria-label="' + (c + 1) + '열 삭제">×</button></div>';
+    h += '<div></div>';
+    for (let r = 0; r < d.rows; r++) {
+      h += '<div class="hd v"><button class="hl" data-trow="' + r + '" title="이 행 전체 비우기/채우기">' + (r + 1) + '행</button><button class="x" data-drow="' + r + '" title="' + (r + 1) + '행 삭제" aria-label="' + (r + 1) + '행 삭제">×</button></div>';
+      for (let c = 0; c < d.pairCols; c++) {
+        const k = map[r + '-' + c];
+        h += '<div class="desk" data-desk="' + k.key + '">' + (k.label ? '<span class="lbl">' + k.label + '번</span>' : '') +
+          k.all.map(sid => '<div class="seat' + (k.seats.indexOf(sid) >= 0 ? '' : ' off') + '" data-seat="' + sid + '"></div>').join('') + '</div>';
+      }
+      h += '<div></div>';
+      if (r < d.rows - 1) h += '<div class="ins"><button class="plus sm" data-irow="' + (r + 1) + '" title="' + (r + 1) + '행 뒤에 행 끼워 넣기">+</button></div>' + '<div class="gapline" style="grid-column:span ' + (d.pairCols + 1) + '"></div>';
+    }
+    h += '<div></div><div class="addrow" style="grid-column:span ' + d.pairCols + '"><button class="btn" data-irow="' + d.rows + '">+ 맨 뒤에 행 추가</button>';
+    if (d.pairCols > 1) h += '<span class="sub">열 끼워 넣기:</span>' + [...Array(d.pairCols - 1).keys()].map(c => '<button class="btn chip" data-icol="' + (c + 1) + '">+ ' + (c + 1) + '·' + (c + 2) + '열 사이</button>').join('');
+    h += '<button class="btn" data-icol="' + d.pairCols + '">+ 맨 오른쪽에 열 추가</button></div>';
+    return h + '</div>';
+  };
+
+  const upd = () => {
+    $('#editMap').innerHTML = editorHTML();
+    $('#vRows').textContent = d.rows; $('#vCols').textContent = d.pairCols;
+    const desks = buildDesks(d); const seats = desks.reduce((a, x) => a + x.seats.length, 0); const two = desks.filter(x => x.seats.length === 2).length;
+    d.students = parseNums(d.studentRange, d.studentExclude);
+    const n = d.students.length;
+    $('#seatCount').innerHTML = '좌석 <b>' + seats + '</b>석 (2인 책상 ' + two + '개) · 학생 <b>' + n + '</b>명' + (seats < n ? ' <span style="color:#c0392b">· 좌석 ' + (n - seats) + '석 부족</span>' : '');
+    $('#stuPreview').textContent = '총 ' + n + '명: ' + (d.students.join(', ') || '없음');
+  };
+  upd();
+  $('#fTitle').oninput = e => d.title = e.target.value;
+  $('#pane').querySelectorAll('[data-step]').forEach(b => b.onclick = () => {
+    const v = +b.dataset.v;
+    if (b.dataset.step === 'rows') v > 0 ? insRow(d.rows) : delRow(d.rows - 1);
+    else v > 0 ? insCol(d.pairCols) : delCol(d.pairCols - 1);
+  });
+  $('#fRange').oninput = e => { d.studentRange = e.target.value; upd(); };
+  $('#fEx').oninput = e => { d.studentExclude = e.target.value; upd(); };
+  $('#fNames').oninput = e => { const m = {}; e.target.value.split('\n').forEach(l => { const x = l.trim().match(/^(\d+)[\s,.:\t]+(.+)$/); if (x) m[x[1]] = x[2].trim(); }); d.names = m; };
+  $('#editMap').onclick = e => {
+    const b = e.target.closest('button,[data-seat]'); if (!b) return; const ds = b.dataset;
+    if (ds.seat) { const i = d.disabled.indexOf(ds.seat); if (i >= 0) d.disabled.splice(i, 1); else d.disabled.push(ds.seat); upd(); }
+    else if (ds.trow != null) toggleLine('r', +ds.trow);
+    else if (ds.tcol != null) toggleLine('c', +ds.tcol);
+    else if (ds.drow != null) delRow(+ds.drow);
+    else if (ds.dcol != null) delCol(+ds.dcol);
+    else if (ds.irow != null) insRow(+ds.irow);
+    else if (ds.icol != null) insCol(+ds.icol);
+  };
+  $('#resetDraft').onclick = () => { A.draft = JSON.parse(JSON.stringify(A.cfg)); paneSetup(); };
+  $('#saveCfg').onclick = async () => {
+    const layoutChanged = A.cfg.rows !== d.rows || A.cfg.pairCols !== d.pairCols || A.cfg.disabled.slice().sort().join() !== d.disabled.slice().sort().join();
+    if (layoutChanged && A.responses.length && !(await confirmBox('이미 ' + A.responses.length + '명이 제출했어요.\n좌석배치도를 바꾸면 책상 번호가 달라져 학생들이 고른 자리 희망이 엉뚱한 자리로 바뀔 수 있어요.\n저장할까요?', '저장'))) return;
+    try { adminLoad(await api('adminSaveConfig', A.pin, d)); toast('설정을 저장했어요.'); } catch (err) { toast('저장 실패: ' + errMsg(err)); }
+  };
+}
+
+// ② 접속·현황
+function paneAccess(){
+  const c = A.cfg; const done = new Set(A.responses.map(r => r.num));
+  const missing = c.students.filter(n => !done.has(n));
+  $('#pane').innerHTML =
+    '<div class="card"><h2>학생 접속용 QR</h2><div class="qrbox"><div id="qr"></div><div style="flex:1;min-width:240px">' +
+    '<p class="sub" style="margin-top:0">' + (FB ? '학생들이 휴대폰 카메라로 찍으면 바로 제출 화면이 열려요. 로그인은 필요 없어요.' : '체험 모드에서는 이 QR로 다른 기기에서 제출할 수 없어요. 파이어베이스를 연결하면 실제로 쓸 수 있어요.') + '</p>' +
+    '<div class="url" id="url">' + esc(APP_URL) + '</div><div class="row" style="margin-top:10px"><button class="btn" id="copyUrl">주소 복사</button><button class="btn pri" id="bigQr">QR 크게 띄우기</button></div></div></div></div>' +
+    '<div class="card"><div class="row"><h2 style="margin:0">제출 받기</h2><span class="sp"></span><span class="pill ' + (c.open ? 'on' : 'off') + '">' + (c.open ? '열림' : '마감') + '</span>' +
+    '<button class="btn ' + (c.open ? '' : 'pri') + '" id="toggleOpen">' + (c.open ? '제출 마감하기' : '제출 다시 열기') + '</button></div>' +
+    '<p class="sub">마감하면 학생 화면에서 더 이상 제출할 수 없어요. 배치를 돌리기 전에 마감하는 걸 권해요.</p></div>' +
+    '<div class="card"><div class="row"><h2 style="margin:0">제출 현황 ' + done.size + ' / ' + c.students.length + '</h2><span class="sp"></span><button class="btn" id="refresh">새로고침</button></div>' +
+    '<p class="sub">15초마다 자동으로 새로고침돼요. 초록색이 제출한 번호예요.</p>' +
+    '<div class="numgrid">' + c.students.map(n => '<div class="num static' + (done.has(n) ? ' done' : '') + '" style="display:flex;align-items:center;justify-content:center">' + n + '</div>').join('') + '</div>' +
+    (missing.length ? '<p class="sub" style="margin-top:12px">미제출: ' + missing.join(', ') + ' (배치할 때 랜덤으로 들어가요)</p>' : '<p class="sub" style="margin-top:12px">모두 제출했어요 🎉</p>') +
+    '<div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn danger" id="clearResp">응답 모두 지우기</button></div></div>';
+  makeQR($('#qr'), APP_URL, 180);
+  $('#copyUrl').onclick = async () => { try { await navigator.clipboard.writeText(APP_URL); toast('주소를 복사했어요.'); } catch (e) { const r = document.createRange(); r.selectNodeContents($('#url')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('주소를 선택했어요. Ctrl+C로 복사하세요.'); } };
+  $('#bigQr').onclick = () => {
+    const o = document.createElement('div'); o.className = 'ovl';
+    o.innerHTML = '<div class="bigqr"><h2>' + esc(c.title) + '</h2><div id="qrBig" style="display:inline-block"></div><p class="sub" style="font-size:16px">휴대폰 카메라로 찍어 주세요 · 화면을 누르면 닫혀요</p></div>';
+    o.onclick = () => o.remove(); document.body.appendChild(o);
+    makeQR(o.querySelector('#qrBig'), APP_URL, Math.min(window.innerHeight - 220, window.innerWidth - 100, 520));
+  };
+  $('#toggleOpen').onclick = async () => { try { adminLoad(await api('adminSetOpen', A.pin, !c.open)); } catch (e) { toast(errMsg(e)); } };
+  $('#refresh').onclick = refreshAll;
+  $('#clearResp').onclick = async () => { if (!(await confirmBox('제출된 응답 ' + A.responses.length + '개를 모두 지울까요?\n되돌릴 수 없어요.', '모두 지우기'))) return; try { adminLoad(await api('adminClearResponses', A.pin)); toast('응답을 지웠어요.'); } catch (e) { toast(errMsg(e)); } };
+  A.timer = setInterval(refreshAll, 15000);
+}
+async function refreshAll(){ try { const all = await api('adminGetAll', A.pin); const before = A.responses.length; adminLoad(all); if (A.responses.length !== before) toast('새 제출 ' + (A.responses.length - before) + '건'); } catch (e) {} }
+
+// ③ 응답
+function paneResp(){
+  const c = A.cfg; const by = {}; A.responses.forEach(r => by[r.num] = r);
+  const nm = n => c.names && c.names[n] ? ' <span class="sub">' + esc(c.names[n]) + '</span>' : '';
+  let h = '<div class="card"><div class="row"><h2 style="margin:0">학생 응답</h2><span class="sp"></span><button class="btn" id="refresh">새로고침</button></div>' +
+    '<p class="sub">자리 희망 숫자는 책상 번호예요(①번 탭 배치도의 번호). 서로 지목한 경우에만 짝이 돼요.</p><div style="overflow-x:auto"><table><tr><th>번호</th><th>희망 짝</th><th>짝 성립</th><th>1순위</th><th>2순위</th><th>3순위</th><th>제출 시각</th></tr>';
+  c.students.forEach(n => {
+    const r = by[n];
+    if (!r) { h += '<tr style="color:#a0a7b4"><td>' + n + nm(n) + '</td><td colspan="6">미제출</td></tr>'; return; }
+    const mutual = r.partner && by[r.partner] && by[r.partner].partner === n;
+    h += '<tr><td><b>' + n + '</b>' + nm(n) + '</td><td>' + (r.partner || '-') + '</td><td>' + (r.partner ? (mutual ? '<span class="pill on">서로 지목</span>' : '<span class="pill">한쪽만</span>') : '-') + '</td>' +
+      [0, 1, 2].map(i => '<td>' + (r.prefs[i] ? r.prefs[i] + '번' : '-') + '</td>').join('') + '<td class="sub">' + esc(r.time || '') + '</td></tr>';
+  });
+  $('#pane').innerHTML = h + '</table></div></div>';
+  $('#refresh').onclick = refreshAll;
+}
+
+// ④ 배치
+function paneResult(){
+  const c = A.cfg, R = A.result;
+  let h = '<div class="card"><div class="row"><h2 style="margin:0">자리 배치</h2><span class="sp"></span>' +
+    '<button class="btn pri" id="run">' + (R ? '다시 돌리기' : '배치 실행') + '</button>' +
+    (R ? '<button class="btn" id="view">' + (A.teacher ? '학생 시점으로' : '교사 시점으로') + '</button><button class="btn" id="print">인쇄</button><button class="btn' + (A.saved ? '' : ' pri') + '" id="save"' + (A.saved ? ' disabled' : '') + '>' + (A.saved ? '저장됨' : '결과 저장') + '</button>' : '') +
+    '</div>';
+  if (c.open && !R) h += '<div class="note">아직 제출을 받고 있어요. 배치 전에 ② 탭에서 제출을 마감하는 걸 권해요.</div>';
+  if (!R) { $('#pane').innerHTML = h + '<p class="sub">제출된 응답 ' + A.responses.length + '개로 자리를 정해요. 미제출 학생은 랜덤으로 들어가요.</p></div>'; bindResult(); return; }
+  const layoutChanged = R.layout.rows !== c.rows || R.layout.pairCols !== c.pairCols || R.layout.disabled.slice().sort().join() !== c.disabled.slice().sort().join();
+  if (layoutChanged) h += '<div class="note">저장된 결과는 이전 좌석배치도 기준이에요. 새 배치도로 다시 돌려 주세요.</div>';
+  if (!A.saved) h += '<div class="info">아직 저장하지 않은 결과예요. 마음에 들면 <b>결과 저장</b>을 눌러 주세요. (파이어베이스에 저장돼서 다른 컴퓨터에서도 볼 수 있어요)</div>';
+  (R.warnings || []).forEach(w => h += '<div class="note">' + esc(w) + '</div>');
+  const mateOf = {}; R.pairs.forEach(p => { mateOf[p.members[0]] = p.members[1]; mateOf[p.members[1]] = p.members[0]; });
+  const gotOf = {}; R.pairs.forEach(p => gotOf[p.desk] = p.got);
+  const deskOfSeat = sid => sid.split('-').slice(0, 2).join('-');
+  h += '<p class="sub">두 자리를 차례로 누르면 서로 바뀌어요. 파란 칸은 서로 지목해서 짝이 된 학생이에요.</p>' +
+    '<div id="printArea"><div class="printonly"><h1>' + esc(c.title) + '</h1><p class="sub">' + esc(R.createdAt || '') + '</p></div>' +
+    '<div class="res" id="resMap" style="max-width:760px;margin:18px auto 6px">' + roomHTML(R.layout, {
+      teacher: A.teacher, labels: false,
+      desk: d => { const g = gotOf[d.label]; const n0 = R.seatOf[d.all[0]], n1 = R.seatOf[d.all[1]]; const ok = n0 && n1 && mateOf[n0] === n1;
+        return { inner: ok && g != null ? '<span class="tag' + (g ? ' k' + g : '') + '">' + (g ? g + '순위' : '랜덤') + '</span>' : '' }; },
+      seat: (sid, on) => { if (!on) return { html: '' }; const n = R.seatOf[sid]; const d = deskOfSeat(sid); const other = R.seatOf[d + '-' + (sid.endsWith('-0') ? 1 : 0)];
+        return { cls: (n && mateOf[n] === other ? 'mate ' : '') + (A.sw === sid ? 'sw ' : '') + (n ? '' : 'empty'), html: n ? n + (c.names && c.names[n] ? '<span class="nm">' + esc(c.names[n]) + '</span>' : '') : '빈자리' }; }
+    }) + '</div></div>';
+  const cnt = [0, 0, 0, 0]; R.pairs.forEach(p => cnt[p.got || 0]++);
+  h += '<div class="stat"><div><b>' + R.pairs.length + '쌍</b><span>서로 지목한 짝</span></div><div><b>' + cnt[1] + '</b><span>1순위 자리</span></div><div><b>' + cnt[2] + '</b><span>2순위 자리</span></div><div><b>' + cnt[3] + '</b><span>3순위 자리</span></div><div><b>' + cnt[0] + '</b><span>희망 자리 실패·없음 → 랜덤</span></div></div>';
+  if (R.oneSided.length) h += '<p class="sub">한쪽만 지목해 짝이 안 된 학생 (교사만 보는 정보): ' + R.oneSided.map(x => x.from + '→' + x.to).join(', ') + '</p>';
+  if (R.unsubmitted.length) h += '<p class="sub">미제출로 랜덤 배치: ' + R.unsubmitted.join(', ') + '</p>';
+  h += '<div class="legend"><span><i style="background:#e6efff"></i>서로 지목한 짝</span><span><i style="background:#f1f4f8"></i>랜덤 배치</span><span>책상 아래 표시: 짝이 받은 희망 순위</span></div></div>';
+  $('#pane').innerHTML = h; bindResult();
+}
+function bindResult(){
+  $('#run').onclick = async () => {
+    if (A.result && !A.saved && !(await confirmBox('저장하지 않은 지금 결과는 사라져요.\n다시 돌릴까요?', '다시 돌리기'))) return;
+    try { const all = await api('adminGetAll', A.pin); A.cfg = all.config; A.responses = all.responses || []; } catch (e) {}
+    const r = assignSeats(A.cfg, A.cfg.students, A.responses); r.createdAt = new Date().toLocaleString('ko-KR');
+    A.result = r; A.saved = false; A.sw = null; adminRender();
+  };
+  const v = $('#view'); if (v) v.onclick = () => { A.teacher = !A.teacher; paneResult(); };
+  const p = $('#print'); if (p) p.onclick = () => window.print();
+  const s = $('#save'); if (s) s.onclick = async () => { try { A.saved = true; adminLoad(await api('adminSaveResult', A.pin, A.result)); toast('결과를 저장했어요.'); } catch (e) { A.saved = false; toast('저장 실패: ' + errMsg(e)); paneResult(); } };
+  const m = $('#resMap'); if (m) m.onclick = e => {
+    const el = e.target.closest('.seat:not(.off)'); if (!el) return; const sid = el.dataset.seat;
+    if (!A.sw) { A.sw = sid; paneResult(); return; }
+    if (A.sw !== sid) { const so = A.result.seatOf; const a = so[A.sw], b = so[sid]; if (b == null) delete so[A.sw]; else so[A.sw] = b; if (a == null) delete so[sid]; else so[sid] = a; A.saved = false; }
+    A.sw = null; paneResult();
+  };
+}
+
+/* ---------- 체험 모드 막대 ---------- */
+function demoFill(){
+  const c = Mock.cfg(); const st = shuffle(c.students); const labels = buildDesks(c).filter(d => d.seats.length === 2).map(d => d.label);
+  const out = []; let i = 0; const pick = () => shuffle(labels).slice(0, 1 + Math.floor(Math.random() * 3));
+  const t = nowStr();
+  while (i < st.length) {
+    const r = Math.random();
+    if (r < 0.62 && i + 1 < st.length) { const a = st[i], b = st[i + 1]; const pr = pick(); out.push({ num: a, partner: b, prefs: pr, time: t }, { num: b, partner: a, prefs: Math.random() < .6 ? pr : pick(), time: t }); i += 2; }
+    else if (r < 0.75) { out.push({ num: st[i], partner: st[(i + 3) % st.length], prefs: pick(), time: t }); i++; }
+    else if (r < 0.9) { out.push({ num: st[i], partner: null, prefs: [], time: t }); i++; }
+    else i++;
+  }
+  out.sort((a, b) => a.num - b.num); Store.set('responses', out);
+}
+function demoBar(){
+  const b = $('#demo'); b.hidden = false;
+  b.innerHTML = '<b>체험판</b><span style="opacity:.75">파이어베이스 설정 전이라 이 브라우저에만 저장돼요</span><span class="sp"></span>' +
+    '<button class="btn' + (MODE === 'student' ? ' on' : '') + '" data-m="student">학생 화면</button><button class="btn' + (MODE === 'admin' ? ' on' : '') + '" data-m="admin">교사 화면</button>' +
+    '<button class="btn" data-m="fill">가상 응답 채우기</button><button class="btn" data-m="reset">초기화</button>';
+  b.onclick = async e => {
+    const m = e.target.dataset.m; if (!m) return;
+    if (m === 'fill') { demoFill(); toast('가상 응답을 만들었어요.'); A.result = null; A.saved = true; }
+    else if (m === 'reset') { Store.set('responses', []); Store.set('result', null); Store.set('config', defaultConfig()); A.result = null; A.saved = true; toast('초기화했어요.'); }
+    else MODE = m;
+    demoBar(); MODE === 'admin' ? adminInit() : studentInit();
+  };
+}
+
+if (!REAL) demoBar();
+MODE === 'admin' ? adminInit() : studentInit();
+</script>
+</body>
+</html>
